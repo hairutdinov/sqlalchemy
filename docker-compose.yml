@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: "sqlalchemy_db"
+    image: postgres:12.12
+    restart: always
+    environment:
+      - POSTGRES_USER=$DB_USERNAME
+      - POSTGRES_PASSWORD=$DB_PASSWORD
+      - POSTGRES_DB=$DB_NAME
+    ports:
+      - "${DB_EXPOSE_PORT}:${DB_PORT}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
