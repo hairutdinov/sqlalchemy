@@ -173,3 +173,82 @@ sql_stmt = insert(models.workers_table).values([
         conn.commit()
 ```
 
+## Методы объекта Table
+
+- Имя таблицы:
+```python
+workers_table.name
+```
+
+- Поля таблицы:
+```python
+print(workers_table.c)
+```
+
+- Инспектирования полей таблицы:
+```python
+print(workers_table.c.username)
+```
+
+- Name и Type полей таблицы:
+```python
+print(workers_table.c.username.name)
+print(workers_table.c.username.type)
+```
+```
+
+- Первичные ключи:
+```python
+print(workers_table.primary_key)
+```
+### SQL выражения
+
+- sqlalchemy.schema.Table.select()
+- sqlalchemy.schema.Table.delete()
+- sqlalchemy.schema.Table.insert()
+- sqlalchemy.schema.Table.update()
+- sqlalchemy.schema.Table.join()
+- sqlalchemy.schema.Table.outerjoin()
+
+Также можно создать/удалить отдельно таблицу, вызвав метод класса Table *create*/*drop*
+
+```python
+workers_table.create(engine)
+```
+
+## Отражение / Reflection
+
+Автоматическое создание объекта модели на основе существующей структуры БД. 
+
+Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
+
+```python
+metadata2 = MetaData()
+workers_reflection = Table("workers", metadata2, autoload_with=engine)
+print(workers_reflection.primary_key)
+```
+
+Или можно сделать отражение всей БД
+
+```python
+metadata2 = MetaData()
+metadata2.reflect(bind=engine)
+tables = metadata2.tables
+workers_table = metadata2.tables["workers"]
+print(tables.keys())
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/reflection.html)
+
+## Интроспекция / Introspection
+
+Анализ схемы БД во время выполнения
+
+```python
+from sqlalchemy import inspect
+inspector = inspect(engine)
+print(inspector.get_table_names())
+print(inspector.get_columns('workers'))
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
