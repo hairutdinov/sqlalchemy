@@ -1,13 +1,55 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+from enum import Enum
+from typing import Annotated
+
 from database import Base
+from database import str_256
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import MetaData
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import text
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+
+intpk = Annotated[int, mapped_column(primary_key=True)]
+created_at = Annotated[
+    datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))
+]
+updated_at = Annotated[
+    datetime,
+    mapped_column(
+        server_default=text("TIMEZONE('utc', now())"), onupdate=datetime.utcnow()
+    ),
+]
 
 
 class Workers(Base):
-    __tablename__ = 'workers'
+    __tablename__ = "workers"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[intpk]
     username: Mapped[str]
+
+
+class Workload(Enum):
+    parttime = "parttime"
+    fulltime = "fulltime"
+
+
+class Resumes(Base):
+    __tablename__ = "resumes"
+
+    id: Mapped[intpk]
+    title: Mapped[str_256]
+    # compensation: Mapped[int] = mapped_column(nullable=True)
+    # compensation: Mapped[Optional[int]]
+    compensation: Mapped[int | None]
+    workload: Mapped[Workload]
+    worker_id: Mapped[int] = mapped_column(ForeignKey("workers.id", ondelete="CASCADE"))
+    created_at: Mapped[created_at]
+    updated_at: Mapped[updated_at]
 
 
 metadata_obj = MetaData()

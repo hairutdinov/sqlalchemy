@@ -41,10 +41,10 @@ DBAPI (Database Application Programming Interface) - движок/драйвер
 ### Диалект SQLAlchemy
 
 
-SQL — это стандартный язык для работы с базами данных. Но и он отличается от базы к базе. Производители БД добавляют свои особенности. 
+SQL — это стандартный язык для работы с базами данных. Но и он отличается от базы к базе. Производители БД добавляют свои особенности.
 
 Для обработки таких различий и нужен диалект.
-Диалект определяет поведение БД - отвечает за обработку SQL инструкций. 
+Диалект определяет поведение БД - отвечает за обработку SQL инструкций.
 
 После установки соответствующего драйвера диалект обрабатывает все отличия, что позволяет сосредоточиться на создании самого приложения.
 
@@ -114,15 +114,12 @@ with engine.connect() as conn:
     - Если запрос не вернет ни одной строки, то метод вернет None.
     - Этот метод удобен, когда вы хотите получить только первую строку результата или когда вы не уверены, что запрос вернет хотя бы одну строку.
 
-
 ## Объект MetaData
-
 
 Причины создания:
 - для определения структуры базы данных (таблицы, столбцы, индексы и ограничения)
 - автоматическое генерирования запросов на создание и изменение
 - облегчает работу с миграциями
-
 
 ### Описание таблиц в императивном стиле
 
@@ -139,14 +136,13 @@ workers_table = Table(
 )
 ```
 
-
 ## Описание таблиц в декларативном стиль
 
 Декларативный означает что код описывает что должно быть сделано, но не как должно.
 
 - В декларативном стиле определение таблиц выносится в классы Python, которые являются подклассами специального класса, предоставляемого SQLAlchemy (declarative_base).
 - Вы описываете структуру таблицы, используя декларативный синтаксис, а SQLAlchemy автоматически создает объекты таблиц на основе этих классов.
-- Описываем желаемый результат (структуру таблицы) в терминах объектов и их свойств, а не пишем прямые инструкции о том, как создать результат. 
+- Описываем желаемый результат (структуру таблицы) в терминах объектов и их свойств, а не пишем прямые инструкции о том, как создать результат.
 
 **DeclarativeBase** - базовый класс для объявления моделей данных в декларативном стиле
 
@@ -184,16 +180,146 @@ with session_factory() as session:
 session_factory = sessionmaker(engine)
 ```
 
+
+### Указание необязательности поля
+```python
+# Способ 1
+compensation: Mapped[int] = mapped_column(nullable=True)
+# Способ 2
+compensation: Mapped[Optional[int]]
+# Способ 3
+compensation: Mapped[int | None]
+```
+
+### Enum поле
+
+```python
+from enum import Enum
+
+class Workload(Enum):
+    parttime = "parttime"
+    fulltime = "fulltime"
+
+class Resumes(Base):
+	...
+	workload: Mapped[Workload]
+```
+
+### Вторичный ключ
+
+```python
+class Workers(Base):
+    ...
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+
+class Resumes(Base):
+	# Способ 1
+	worker_id = Mapped[int] = mapped_column(ForeignKey("workers.id"))
+	# Способ 2
+	worker_id = Mapped[int] = mapped_column(ForeignKey(Workers.id))
+```
+
+Лучше использовать строчную запись вторичного ключа: `"workers.id"`
+
+Действие, которое будет выполняться при удалении родительской записи (на которую ссылкается внешний ключ):
+
+```python
+ForeignKey("workers.id", ondelete="CASCADE")
+```
+
+Варианты ondelete:
+- CASCADE
+- RESTRICT
+- SET NULL
+- NO ACTION
+
+### Поле created_at
+
+```python
+created_at = Mapped[datetime] = mapped_column(server_default=func.now())
+```
+
+Но лучше by default вставлять время без часового пояса (utc)
+
+```python
+created_at = Mapped[datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
+```
+
+### Поле updated_at
+
+```python
+updated_at = Mapped[datetime] = mapped_column(
+	server_default=text("TIMEZONE('utc', now())"),
+	onupdate=datetime.utcnow()
+)
+```
+
+Т.к. мы не можем быть уверены, что обновление всегда будет происходить при помощи ORM модели, лучшим решением будет в postgres обнолять это поле при помощи триггера
+
+```python
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+	NEW.updated_at = TIMEZONE('utc', NOW());
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_updated_at
+BEFORE UPDATE ON <your_table_name>
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();
+```
+
+### Кастомные типы
+
+```python
+from typing import Annotated
+
+intpk = Annotated[int, mapped_column(primary_key=True)]
+
+class Workers(Base):
+    ...
+    id: Mapped[intpk]
+```
+
+### Кастомные типы рядом с классом Base
+
+##### database.py
+```python
+from typing import Annotated
+
+str_256 = Annotated[str, 256]
+
+
+class Base(DeclarativeBase):
+	type_annotation_map = {
+		str_256: String(256)
+	}
+```
+
+##### models.py
+
+```python
+from database import Base, str_256
+from sqlalchemy.orm import Mapped
+
+class Resumes(Base):
+	...
+	title: Mapped[str_256]
+```
+
 ## Вставка данных
 
 ### Сырой запрос
 ```python
 file_path = Path(__file__).parent / 'test_data.sql'
-    with open(file_path) as sql_file:
-        sql_stmt = sql_file.read()
-        with engine.connect() as conn:
-            conn.execute(text(sql_stmt))
-            conn.commit()
+with open(file_path) as sql_file:
+	sql_stmt = sql_file.read()
+	with engine.connect() as conn:
+		conn.execute(text(sql_stmt))
+		conn.commit()
 ```
 
 ### С помощью Query Builder / строителя запросов
@@ -253,10 +379,9 @@ print(workers_table.primary_key)
 ```python
 workers_table.create(engine)
 ```
-
 ## Отражение / Reflection
 
-Автоматическое создание объекта модели на основе существующей структуры БД. 
+Автоматическое создание объекта модели на основе существующей структуры БД.
 
 Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
 
@@ -304,4 +429,3 @@ print(inspector.get_columns('workers'))
 
 ### sessionmaker
 Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
-
