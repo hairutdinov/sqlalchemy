@@ -148,6 +148,41 @@ workers_table = Table(
 - Вы описываете структуру таблицы, используя декларативный синтаксис, а SQLAlchemy автоматически создает объекты таблиц на основе этих классов.
 - Описываем желаемый результат (структуру таблицы) в терминах объектов и их свойств, а не пишем прямые инструкции о том, как создать результат. 
 
+**DeclarativeBase** - базовый класс для объявления моделей данных в декларативном стиле
+
+```python
+from sqlalchemy.orm import DeclarativeBase
+class Base(DeclarativeBase):
+    pass
+```
+
+### Создание всех таблиц
+```python
+Base.metadata.create_all(engine)
+```
+
+### Удаление всех таблиц
+```python
+Base.metadata.drop_all(engine)
+```
+
+### Вставка данных в таблицу
+
+```python
+with session_factory() as session:
+    worker_bobr = Workers(username="bobr")
+    worker_volk = Workers(username="volk")
+    # session.add(worker_bobr)
+    # session.add(worker_volk)
+    session.add_all([worker_bobr, worker_volk])
+    session.commit()
+```
+
+#### Session Factory создается так:
+
+```python
+session_factory = sessionmaker(engine)
+```
 
 ## Вставка данных
 
@@ -186,21 +221,24 @@ print(workers_table.c)
 ```
 
 - Инспектирования полей таблицы:
+
 ```python
 print(workers_table.c.username)
 ```
 
 - Name и Type полей таблицы:
+
 ```python
 print(workers_table.c.username.name)
 print(workers_table.c.username.type)
 ```
-```
 
 - Первичные ключи:
+
 ```python
 print(workers_table.primary_key)
 ```
+
 ### SQL выражения
 
 - sqlalchemy.schema.Table.select()
@@ -252,3 +290,18 @@ print(inspector.get_columns('workers'))
 ```
 
 [Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
+
+## Session
+
+Когда мы входим в сессию, открывается транзакция
+
+Предоставляет удобный интерфейс для выполнения запросов, добавления, изменения и удаления данных в базе данных.
+
+- позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
+- отслеживает изменения в объекте и авто. генерирует SQL запросы
+- кэширует запросы и рез-ты выпол-ия
+- эффиктивно управляят соединением с БД
+
+### sessionmaker
+Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
+

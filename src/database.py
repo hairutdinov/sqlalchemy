@@ -14,6 +14,12 @@ engine = create_engine(
     max_overflow=10
 )
 
+session_factory = sessionmaker(engine)
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 if __name__ == '__main__':
     with engine.connect() as conn:
