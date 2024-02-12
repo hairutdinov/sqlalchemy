@@ -262,6 +262,43 @@ def update_worker(worker_id: int = 1, username: str = "emanuel"):
 
 При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
 
+### Session Flush
+
+Используется для синхронизации всех изменений объектов модели с базой данных, но без фиксации транзакции.
+
+Отправляет все ожидающие команды (например, добавление, изменение, удаление записей) в базу данных, но не фиксирует изменения, как это делает session.commit().
+
+Причины использовать flush:
+- предварительная проверка целостности (все ли данные прошли валидацию полей БД)
+- повышение производительности (когда имеется большой объем данных, которые должны быть выполнены при фиксации изменений)
+- Обновление автоматически генерируемых значений (например auto-increment id, или created_at, updated_at)
+
+### expire/expire_all
+
+Используется для сброса изменений до фиксации.
+
+#### Expire all
+Новый запрос в БД будет сделан только если после expire_all() будет обращение к аттрибутам экземпляра
+
+```python
+worker_michael = session.get(Workers, worker_id)
+worker_michael.username = username
+session.expire_all()
+print(worker_michael.username) # здесь будет сделан запрос
+session.commit()
+```
+
+### refresh
+
+Используется для получения самых актуальных данных
+
+```python
+worker_michael = session.get(Workers, worker_id)
+worker_michael.username = username
+session.refresh(worker_michael)
+session.commit()
+```
+
 #### Session Factory создается так:
 
 ```python
