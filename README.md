@@ -262,6 +262,37 @@ def update_worker(worker_id: int = 1, username: str = "emanuel"):
 
 При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
 
+### Запрос SELECT
+
+```sql
+SELECT resumes.workload, CAST(avg(resumes.compensation) AS INTEGER) AS avg_compensation
+FROM resumes
+WHERE (resumes.title LIKE '%' || 'Python' || '%') AND resumes.compensation > 40000
+GROUP BY resumes.workload
+```
+
+```python
+def select_resumes_avg_compensation(like_language: str = "Python"):
+	with session_factory() as session:
+		query = (
+			select(
+				Resumes.workload,
+				func.cast(func.avg(Resumes.compensation), Integer).label("avg_compensation")
+			)
+			.select_from(Resumes)
+			.filter(and_(
+				Resumes.title.contains(like_language),
+				Resumes.compensation > 40000
+			))
+			.group_by(Resumes.workload)
+		)
+		print(query.compile(compile_kwargs={"literal_binds": True}))
+		res = session.execute(query)
+		result = res.all()
+		print(result)
+		print(result[0].avg_compensation)
+```
+
 ### Session Flush
 
 Используется для синхронизации всех изменений объектов модели с базой данных, но без фиксации транзакции.
