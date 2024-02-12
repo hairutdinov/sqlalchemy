@@ -136,6 +136,52 @@ workers_table = Table(
 )
 ```
 
+## SELECT через Core
+
+```python
+with engine.connect() as conn:
+	query = select(models.workers_table)
+	result = conn.execute(query)
+	print(result.all())
+```
+
+`.all()` - возвращает все строки не в виде объекта, а в виде списка кортежей
+`.scalars().all()` - возвращает первый столбец в каждой строке
+
+## UPDATE через Core
+
+### Сырой запрос
+
+```python
+def update_worker(worker_id: int = 1, username: str = "Emanuel"):
+	with engine.connect() as conn:
+		stmt = text("UPDATE workers SET username=:username where id=:id")
+		stmt = stmt.bindparams(username=username, id=worker_id)
+		conn.execute(stmt)
+		conn.commit()
+```
+
+### С помощью Query Builder / строителя запросов
+
+```python
+def update_worker(worker_id: int = 1, username: str = "Emanuel"):
+    with engine.connect() as conn:
+        stmt = (
+            update(models.workers_table)
+            .values(username=username)
+            # .where(models.workers_table.c.id == worker_id)
+            # .filter(models.workers_table.c.id == worker_id)
+            .filter_by(id=worker_id)
+        )
+        conn.execute(stmt)
+        conn.commit()
+```
+
+Фильтр where можно задавать следующими способами:
+- `.where()` - столбцы указываются в формате <table>.c.<column> `.where(workers_table.c.id == 1)`
+- `.filter()` - синоним для .where() `.filter(workers_table.c.username == 'John')`
+- `.filter_by()` - стобцы указываются в kwarg стиле (без указания названия таблицы) `.filter_by(id=2)`
+
 ## Описание таблиц в декларативном стиль
 
 Декларативный означает что код описывает что должно быть сделано, но не как должно.
@@ -326,8 +372,8 @@ with open(file_path) as sql_file:
 
 ```python
 sql_stmt = insert(models.workers_table).values([
-        {"username": "Bobr"},
-        {"username": "Volk"},
+        {"username": "John"},
+        {"username": "Michael"},
     ])
     with engine.connect() as conn:
         conn.execute(sql_stmt)
