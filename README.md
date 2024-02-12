@@ -7,8 +7,10 @@
 - Безопасность (экранизация параметров)
 - Производительность (может применять повторно план выполнения запроса в случае повторного запроса)
 - Переносимость (без труда можно перейти на другую СУБД, не меняя код, потому что это некая абстракция)
-- Легче читать, проверять, так как это python код, объекты
+- Легче читать, проверять, так как это python код, объекты (типизация)
 - Самая популярная ORM
+- Единый стиль написания запросов
+- Удобно работать с вложенными структурами
 
 ### Ресурсы
 
@@ -292,6 +294,35 @@ def select_resumes_avg_compensation(like_language: str = "Python"):
 		print(result)
 		print(result[0].avg_compensation)
 ```
+
+### Сложные запросы
+
+```sql
+WITH helper2 AS (
+  SELECT
+    *,
+    compensation - avg_workload_compensation AS compensation_diff
+  FROM
+    (
+      SELECT
+        w.id,
+        w.username,
+        r.compensation,
+        r.workload,
+        avg (r.compensation) OVER (PARTITION BY workload) :: int AS avg_workload_compensation
+      FROM
+        resumes r
+        JOIN workers w ON r.worker_id = w.id
+    ) helper1
+)
+SELECT
+  *
+FROM
+  helper2
+ORDER BY
+  compensation_diff DESC;
+```
+
 
 ### Session Flush
 
