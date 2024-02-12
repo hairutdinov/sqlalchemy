@@ -1,28 +1,38 @@
-from pathlib import Path
-from sqlalchemy import text, insert
-
-from database import engine, session_factory
-from models import Workers
 from database import Base
+from database import engine
+from database import session_factory
+from models import Workers
+from sqlalchemy import select
 
 
-def create_tables():
-    engine.echo = False
-    Base.metadata.create_all(engine)
-    engine.echo = True
+class Core:
+    @staticmethod
+    def recreate_tables():
+        engine.echo = False
+        Base.metadata.drop_all(engine)
+        Base.metadata.create_all(engine)
+        engine.echo = True
 
+    @staticmethod
+    def insert_workers():
+        with session_factory() as session:
+            worker_jack = Workers(username="jack")
+            worker_michael = Workers(username="michael")
+            # session.add(worker_jack)
+            # session.add(worker_michael)
+            session.add_all([worker_jack, worker_michael])
+            session.commit()
 
-def drop_tables():
-    engine.echo = False
-    Base.metadata.drop_all(engine)
-    engine.echo = True
+    @staticmethod
+    def select_workers():
+        with session_factory() as session:
+            query = select(Workers)
+            result = session.execute(query)
+            print(result.scalars().all())
 
-
-def insert_test_data():
-    with session_factory() as session:
-        worker_bobr = Workers(username="bobr")
-        worker_volk = Workers(username="volk")
-        # session.add(worker_bobr)
-        # session.add(worker_volk)
-        session.add_all([worker_bobr, worker_volk])
-        session.commit()
+    @staticmethod
+    def update_worker(worker_id: int = 1, username: str = "emanuel"):
+        with session_factory() as session:
+            worker_michael = session.get(Workers, worker_id)
+            worker_michael.username = username
+            session.commit()

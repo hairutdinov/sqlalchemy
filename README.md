@@ -146,7 +146,7 @@ with engine.connect() as conn:
 ```
 
 `.all()` - возвращает все строки не в виде объекта, а в виде списка кортежей
-`.scalars().all()` - возвращает первый столбец в каждой строке
+`.scalars().all()` - возвращает первый столбец в каждой строке (полезно при SELECT запросе через ORM)
 
 ## UPDATE через Core
 
@@ -219,6 +219,48 @@ with session_factory() as session:
     session.add_all([worker_bobr, worker_volk])
     session.commit()
 ```
+
+### Получение одной записи
+
+Если в таблице первичный ключ только один:
+```python
+worker_id = 1
+worker_jack = session.get(Workers, worker_id)
+```
+
+Если в таблице первичных ключей несколько:
+- можно передать кортеж:
+```python
+worker_jack = session.get(Workers, (1, "John"))
+```
+- можно передать словарь
+```python
+worker_jack = session.get(Workers, {"id": 1, "username": "John"})
+```
+
+### Получение нескольких записей
+
+```python
+with session_factory() as session:
+	query = select(Workers)
+	result = session.execute(query)
+	print(result.scalars().all())
+```
+
+Разница с Core в том, что sqlalchemy получит данные и превратит их в модели (в инстансы/экзэмляры модели Workers)
+
+### Обновление через ORM
+```python
+def update_worker(worker_id: int = 1, username: str = "emanuel"):
+    with session_factory() as session:
+        worker_michael = session.get(Workers, worker_id)
+        worker_michael.username = username
+        session.commit()
+```
+
+**⚠️ Важно**
+
+При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
 
 #### Session Factory создается так:
 
