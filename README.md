@@ -50,7 +50,6 @@ SQL — это стандартный язык для работы с базам
 
 После установки соответствующего драйвера диалект обрабатывает все отличия, что позволяет сосредоточиться на создании самого приложения.
 
-
 ## Создание движка
 
 - url - строка подключения к БД
@@ -67,6 +66,25 @@ engine = create_engine(
     pool_size=5,
     max_overflow=10
 )
+```
+
+## Session
+
+Когда мы входим в сессию, открывается транзакция
+
+Предоставляет удобный интерфейс для выполнения запросов, добавления, изменения и удаления данных в базе данных.
+
+- позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
+- отслеживает изменения в объекте и авто. генерирует SQL запросы
+- кэширует запросы и рез-ты выпол-ия
+- эффективно управляет соединением с БД
+
+## Фабрика сессий: работа с сессиями
+
+Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
+
+```python
+session_factory = sessionmaker(engine)
 ```
 
 ## Использование контекстного менеджера with
@@ -91,6 +109,43 @@ engine = create_engine(
 Отличие в том, что begin() после выхода из контекстного менеджера делает commit, а connect() - rollback
 
 Т.к. явное лучше не явного, лучше использовать connect() и явно прописывать conn.commit():
+
+## Отражение / Reflection
+
+Автоматическое создание объекта модели на основе существующей структуры БД.
+
+Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
+
+```python
+metadata2 = MetaData()
+workers_reflection = Table("workers", metadata2, autoload_with=engine)
+print(workers_reflection.primary_key)
+```
+
+Или можно сделать отражение всей БД
+
+```python
+metadata2 = MetaData()
+metadata2.reflect(bind=engine)
+tables = metadata2.tables
+workers_table = metadata2.tables["workers"]
+print(tables.keys())
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/reflection.html)
+
+## Интроспекция / Introspection
+
+Анализ схемы БД во время выполнения
+
+```python
+from sqlalchemy import inspect
+inspector = inspect(engine)
+print(inspector.get_table_names())
+print(inspector.get_columns('workers'))
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
 
 ## Сырой запрос через text
 
@@ -138,6 +193,76 @@ workers_table = Table(
     Column("id", Integer, primary_key=True),
     Column("username", String),
 )
+```
+
+### Методы объекта Table
+
+- Имя таблицы:
+`workers_table.name`
+
+- Поля таблицы:
+```python
+print(workers_table.c)
+```
+
+- Инспектирования полей таблицы:
+
+```python
+print(workers_table.c.username)
+```
+
+- Name и Type полей таблицы:
+
+```python
+print(workers_table.c.username.name)
+print(workers_table.c.username.type)
+```
+
+- Первичные ключи:
+
+```python
+print(workers_table.primary_key)
+```
+
+#### SQL выражения
+
+- sqlalchemy.schema.Table.select()
+- sqlalchemy.schema.Table.delete()
+- sqlalchemy.schema.Table.insert()
+- sqlalchemy.schema.Table.update()
+- sqlalchemy.schema.Table.join()
+- sqlalchemy.schema.Table.outerjoin()
+
+#### Удаление отдельной таблицы
+
+Также можно создать/удалить отдельно таблицу, вызвав метод класса Table *create*/*drop*
+
+```python
+workers_table.create(engine)
+```
+
+### INSERT/Вставка данных
+
+#### Сырой запрос
+```python
+file_path = Path(__file__).parent / 'test_data.sql'
+with open(file_path) as sql_file:
+	sql_stmt = sql_file.read()
+	with engine.connect() as conn:
+		conn.execute(text(sql_stmt))
+		conn.commit()
+```
+
+#### С помощью Query Builder / строителя запросов
+
+```python
+sql_stmt = insert(models.workers_table).values([
+		{"username": "John"},
+		{"username": "Michael"},
+	])
+with engine.connect() as conn:
+	conn.execute(sql_stmt)
+	conn.commit()
 ```
 
 ### SELECT запрос
@@ -363,7 +488,7 @@ print(worker_michael.username) # здесь будет сделан запрос
 session.commit()
 ```
 
-### refresh
+### Актуализация данных: Refresh
 
 Используется для получения самых актуальных данных
 
@@ -373,13 +498,6 @@ worker_michael.username = username
 session.refresh(worker_michael)
 session.commit()
 ```
-
-#### Session Factory создается так:
-
-```python
-session_factory = sessionmaker(engine)
-```
-
 
 ### Указание необязательности поля
 ```python
@@ -397,8 +515,8 @@ compensation: Mapped[int | None]
 from enum import Enum
 
 class Workload(Enum):
-    parttime = "parttime"
-    fulltime = "fulltime"
+	parttime = "parttime"
+	fulltime = "fulltime"
 
 class Resumes(Base):
 	...
@@ -409,8 +527,8 @@ class Resumes(Base):
 
 ```python
 class Workers(Base):
-    ...
-    id: Mapped[int] = mapped_column(primary_key=True)
+	...
+	id: Mapped[int] = mapped_column(primary_key=True)
 
 
 class Resumes(Base):
@@ -474,6 +592,8 @@ EXECUTE FUNCTION update_updated_at();
 
 ### Кастомные типы
 
+#### Рядом с моделями
+
 ```python
 from typing import Annotated
 
@@ -484,9 +604,10 @@ class Workers(Base):
     id: Mapped[intpk]
 ```
 
-### Кастомные типы рядом с классом Base
+#### Рядом с классом Base
 
-##### database.py
+**database.py**
+
 ```python
 from typing import Annotated
 
@@ -499,7 +620,7 @@ class Base(DeclarativeBase):
 	}
 ```
 
-##### models.py
+**models.py**
 
 ```python
 from database import Base, str_256
@@ -510,128 +631,7 @@ class Resumes(Base):
 	title: Mapped[str_256]
 ```
 
-## Вставка данных
-
-### Сырой запрос
-```python
-file_path = Path(__file__).parent / 'test_data.sql'
-with open(file_path) as sql_file:
-	sql_stmt = sql_file.read()
-	with engine.connect() as conn:
-		conn.execute(text(sql_stmt))
-		conn.commit()
-```
-
-### С помощью Query Builder / строителя запросов
-
-```python
-sql_stmt = insert(models.workers_table).values([
-		{"username": "John"},
-		{"username": "Michael"},
-	])
-with engine.connect() as conn:
-	conn.execute(sql_stmt)
-	conn.commit()
-```
-
-## Методы объекта Table
-
-- Имя таблицы:
-```python
-workers_table.name
-```
-
-- Поля таблицы:
-```python
-print(workers_table.c)
-```
-
-- Инспектирования полей таблицы:
-
-```python
-print(workers_table.c.username)
-```
-
-- Name и Type полей таблицы:
-
-```python
-print(workers_table.c.username.name)
-print(workers_table.c.username.type)
-```
-
-- Первичные ключи:
-
-```python
-print(workers_table.primary_key)
-```
-
-### SQL выражения
-
-- sqlalchemy.schema.Table.select()
-- sqlalchemy.schema.Table.delete()
-- sqlalchemy.schema.Table.insert()
-- sqlalchemy.schema.Table.update()
-- sqlalchemy.schema.Table.join()
-- sqlalchemy.schema.Table.outerjoin()
-
-Также можно создать/удалить отдельно таблицу, вызвав метод класса Table *create*/*drop*
-
-```python
-workers_table.create(engine)
-```
-## Отражение / Reflection
-
-Автоматическое создание объекта модели на основе существующей структуры БД.
-
-Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
-
-```python
-metadata2 = MetaData()
-workers_reflection = Table("workers", metadata2, autoload_with=engine)
-print(workers_reflection.primary_key)
-```
-
-Или можно сделать отражение всей БД
-
-```python
-metadata2 = MetaData()
-metadata2.reflect(bind=engine)
-tables = metadata2.tables
-workers_table = metadata2.tables["workers"]
-print(tables.keys())
-```
-
-[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/reflection.html)
-
-## Интроспекция / Introspection
-
-Анализ схемы БД во время выполнения
-
-```python
-from sqlalchemy import inspect
-inspector = inspect(engine)
-print(inspector.get_table_names())
-print(inspector.get_columns('workers'))
-```
-
-[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
-
-## Session
-
-Когда мы входим в сессию, открывается транзакция
-
-Предоставляет удобный интерфейс для выполнения запросов, добавления, изменения и удаления данных в базе данных.
-
-- позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
-- отслеживает изменения в объекте и авто. генерирует SQL запросы
-- кэширует запросы и рез-ты выпол-ия
-- эффективно управляет соединением с БД
-
-### sessionmaker
-Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
-
-
-### Relationships
+## Relationships
 
 #### Lazy Load / ленивая загрузка
 
