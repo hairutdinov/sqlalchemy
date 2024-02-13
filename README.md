@@ -12,7 +12,7 @@
 - Единый стиль написания запросов
 - Удобно работать с вложенными структурами
 
-### Ресурсы
+## Ресурсы
 
 - https://lectureswww.readthedocs.io/6.www.sync/2.codding/9.databases/2.sqlalchemy/0.engine.html#create-engine
 - https://pythonru.com/biblioteki/ustanovka-i-podklyuchenie-sqlalchemy-k-baze-dannyh
@@ -51,10 +51,8 @@ SQL — это стандартный язык для работы с базам
 После установки соответствующего драйвера диалект обрабатывает все отличия, что позволяет сосредоточиться на создании самого приложения.
 
 
-## Database Connection
+## Создание движка
 
-
-**Создаем движок**
 - url - строка подключения к БД
     - DSN (Data Source Name) - это строка или набор параметров, используемых для определения и настройки подключения к базе данных или другому источнику данных. В отличие от URL, который чаще всего используется в контексте веб-приложений и имеет строго определенный формат, DSN обычно предоставляет более гибкий и специфический для конкретной базы данных способ определения соединения.
     - формат: dialect+driver://username:password@host:port/database
@@ -69,11 +67,9 @@ engine = create_engine(
     pool_size=5,
     max_overflow=10
 )
-
 ```
 
-### Использование контекстного менеджера
-
+## Использование контекстного менеджера with
 
 Преимущества:
 - Автоматическое управление транзакциями (Например, с помощью контекстного менеджера session в SQLAlchemy вы можете автоматически открывать, фиксировать и откатывать транзакции, обеспечивая целостность данных.)
@@ -81,11 +77,9 @@ engine = create_engine(
 - Безопасное обращение с ресурсами - даже в случае исключения, гарантируется что закрытие будет завершено правильно
 - Читаемость кода
 
+## Создание соединения с БД
 
-## Первый запрос
-
-
-Для создании нового соединения с базой у engine есть 2 метода:
+Для создания нового соединения с базой у engine есть 2 метода:
 - .begin()
     - начинает новую транзакцию
     - возвращает объект транзакции
@@ -98,12 +92,16 @@ engine = create_engine(
 
 Т.к. явное лучше не явного, лучше использовать connect() и явно прописывать conn.commit():
 
+## Сырой запрос через text
+
 ```python
 with engine.connect() as conn:
     res = conn.execute(text("SELECT VERSION()"))
     print(res)
     conn.commit()
 ```
+
+## Получение одной строки
 
 Чтобы вернуть одну строчку, можно использовать на результате res метод .one()/.first() (но в запросе все равно вытащиться все строки и one() будет работать на уже полученных данных, хранящихся в RAM), или все строчки - .all()
 
@@ -120,14 +118,18 @@ with engine.connect() as conn:
 
 Причины создания:
 - для определения структуры базы данных (таблицы, столбцы, индексы и ограничения)
-- автоматическое генерирования запросов на создание и изменение
+- автоматическое генерирование запросов на создание и изменение
 - облегчает работу с миграциями
 
-### Описание таблиц в императивном стиле
+## Императивный стиль / SQLAlchemy Core
+
+### Описание
 
 - В императивном стиле таблицы определяются непосредственно с использованием языка Python.
 - Вы создаете объекты таблиц, столбцов, индексов и ограничений напрямую в коде Python с помощью классов и методов SQLAlchemy.
 - Этот стиль более прямолинеен и ближе к стандартному программированию на Python.
+
+### Пример создания таблицы
 
 ```python
 workers_table = Table(
@@ -138,7 +140,7 @@ workers_table = Table(
 )
 ```
 
-## SELECT через Core
+### SELECT запрос
 
 ```python
 with engine.connect() as conn:
@@ -150,9 +152,9 @@ with engine.connect() as conn:
 `.all()` - возвращает все строки не в виде объекта, а в виде списка кортежей
 `.scalars().all()` - возвращает первый столбец в каждой строке (полезно при SELECT запросе через ORM)
 
-## UPDATE через Core
+### UPDATE запрос
 
-### Сырой запрос
+#### Сырой запрос
 
 ```python
 def update_worker(worker_id: int = 1, username: str = "Emanuel"):
@@ -163,7 +165,9 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 		conn.commit()
 ```
 
-### С помощью Query Builder / строителя запросов
+⚠️**Важно** Всегда использовать bindparams для предотвращения sql-инъекций
+
+#### С помощью Query Builder / строителя запросов
 
 ```python
 def update_worker(worker_id: int = 1, username: str = "Emanuel"):
@@ -184,7 +188,9 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 - `.filter()` - синоним для .where() `.filter(workers_table.c.username == 'John')`
 - `.filter_by()` - столбцы указываются в kwarg стиле (без указания названия таблицы) `.filter_by(id=2)`
 
-## Описание таблиц в декларативном стиль
+## Декларативный стиль / SQLAlchemy ORM
+
+### Описание
 
 Декларативный означает что код описывает что должно быть сделано, но не как должно.
 
@@ -194,6 +200,7 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 
 **DeclarativeBase** - базовый класс для объявления моделей данных в декларативном стиле
 
+### Создание базового класса Base
 ```python
 from sqlalchemy.orm import DeclarativeBase
 class Base(DeclarativeBase):
@@ -210,7 +217,7 @@ Base.metadata.create_all(engine)
 Base.metadata.drop_all(engine)
 ```
 
-### Вставка данных в таблицу
+### INSERT/Вставка данных
 
 ```python
 with session_factory() as session:
@@ -222,7 +229,9 @@ with session_factory() as session:
     session.commit()
 ```
 
-### Получение одной записи
+### SELECT
+
+#### Получение одной записи
 
 Если в таблице первичный ключ только один:
 ```python
@@ -240,7 +249,7 @@ worker_jack = session.get(Workers, (1, "John"))
 worker_jack = session.get(Workers, {"id": 1, "username": "John"})
 ```
 
-### Получение нескольких записей
+#### Получение нескольких записей
 
 ```python
 with session_factory() as session:
@@ -251,20 +260,7 @@ with session_factory() as session:
 
 Разница с Core в том, что sqlalchemy получит данные и превратит их в модели (в инстансы/экземпляры модели Workers)
 
-### Обновление через ORM
-```python
-def update_worker(worker_id: int = 1, username: str = "emanuel"):
-    with session_factory() as session:
-        worker_michael = session.get(Workers, worker_id)
-        worker_michael.username = username
-        session.commit()
-```
-
-**⚠️ Важно**
-
-При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
-
-### Запрос SELECT
+#### Использование функции агрегирования, приведение типа, объединения и условия contains,
 
 ```sql
 SELECT resumes.workload, CAST(avg(resumes.compensation) AS INTEGER) AS avg_compensation
@@ -295,7 +291,7 @@ def select_resumes_avg_compensation(like_language: str = "Python"):
 		print(result[0].avg_compensation)
 ```
 
-### Сложные запросы
+#### Сложные запросы
 
 ```sql
 WITH helper2 AS (
@@ -323,19 +319,36 @@ ORDER BY
   compensation_diff DESC;
 ```
 
+### UPDATE/Обновление
+```python
+def update_worker(worker_id: int = 1, username: str = "emanuel"):
+    with session_factory() as session:
+        worker_michael = session.get(Workers, worker_id)
+        worker_michael.username = username
+        session.commit()
+```
 
-### Session Flush
+**⚠️ Важно**
+
+При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
+
+### Синхронизация изменений с базой данных: Session Flush
+
+#### Описание
 
 Используется для синхронизации всех изменений объектов модели с базой данных, но без фиксации транзакции.
 
 Отправляет все ожидающие команды (например, добавление, изменение, удаление записей) в базу данных, но не фиксирует изменения, как это делает session.commit().
 
-Причины использовать flush:
+#### Причины использования flush
+
 - предварительная проверка целостности (все ли данные прошли валидацию полей БД)
 - повышение производительности (когда имеется большой объем данных, которые должны быть выполнены при фиксации изменений)
 - Обновление автоматически генерируемых значений (например auto-increment id, или created_at, updated_at)
 
-### expire/expire_all
+### Сброс состояния объектов: expire и expire_all
+
+#### Описание
 
 Используется для сброса изменений до фиксации.
 
@@ -444,7 +457,7 @@ updated_at = Mapped[datetime] = mapped_column(
 
 Т.к. мы не можем быть уверены, что обновление всегда будет происходить при помощи ORM модели, лучшим решением будет в postgres обновлять это поле при помощи триггера
 
-```python
+```sql
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -513,12 +526,12 @@ with open(file_path) as sql_file:
 
 ```python
 sql_stmt = insert(models.workers_table).values([
-        {"username": "John"},
-        {"username": "Michael"},
-    ])
-    with engine.connect() as conn:
-        conn.execute(sql_stmt)
-        conn.commit()
+		{"username": "John"},
+		{"username": "Michael"},
+	])
+with engine.connect() as conn:
+	conn.execute(sql_stmt)
+	conn.commit()
 ```
 
 ## Методы объекта Table
@@ -844,7 +857,7 @@ from sqlalchemy import Index
 
 class Resumes(Base):
     ...
-	__table_args__ = (
+    __table_args__ = (
 		Index("resumes_title_idx", "title"),
 		CheckConstraint("compensation > 0", name="resumes_check_compensation_gt_0")
 	)
