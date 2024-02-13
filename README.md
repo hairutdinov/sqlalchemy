@@ -1,3 +1,76 @@
+* [SqlAlchemy](#sqlalchemy)
+   * [Преимущества](#преимущества)
+   * [Ресурсы](#ресурсы)
+   * [Схема устройства / Диаграмма уровней SQLAlchemy](#схема-устройства--диаграмма-уровней-sqlalchemy)
+      * [1-ый слой](#1-ый-слой)
+      * [2-ой слой](#2-ой-слой)
+      * [3-ий слой](#3-ий-слой)
+      * [Диалект SQLAlchemy](#диалект-sqlalchemy)
+   * [Создание движка](#создание-движка)
+   * [Session](#session)
+   * [Фабрика сессий: работа с сессиями](#фабрика-сессий-работа-с-сессиями)
+   * [Использование контекстного менеджера with](#использование-контекстного-менеджера-with)
+   * [Создание соединения с БД](#создание-соединения-с-бд)
+   * [Отражение / Reflection](#отражение--reflection)
+   * [Интроспекция / Introspection](#интроспекция--introspection)
+   * [Сырой запрос через text](#сырой-запрос-через-text)
+   * [Получение одной строки](#получение-одной-строки)
+   * [Объект MetaData](#объект-metadata)
+   * [Императивный стиль / SQLAlchemy Core](#императивный-стиль--sqlalchemy-core)
+      * [Описание](#описание)
+      * [Пример создания таблицы](#пример-создания-таблицы)
+      * [Методы объекта Table](#методы-объекта-table)
+         * [SQL выражения](#sql-выражения)
+         * [Удаление отдельной таблицы](#удаление-отдельной-таблицы)
+      * [INSERT/Вставка данных](#insertвставка-данных)
+         * [Сырой запрос](#сырой-запрос)
+         * [С помощью Query Builder / строителя запросов](#с-помощью-query-builder--строителя-запросов)
+      * [SELECT запрос](#select-запрос)
+      * [UPDATE запрос](#update-запрос)
+         * [Сырой запрос](#сырой-запрос-1)
+         * [С помощью Query Builder / строителя запросов](#с-помощью-query-builder--строителя-запросов-1)
+   * [Декларативный стиль / SQLAlchemy ORM](#декларативный-стиль--sqlalchemy-orm)
+      * [Описание](#описание-1)
+      * [Создание базового класса Base](#создание-базового-класса-base)
+      * [Создание всех таблиц](#создание-всех-таблиц)
+      * [Удаление всех таблиц](#удаление-всех-таблиц)
+      * [INSERT/Вставка данных](#insertвставка-данных-1)
+      * [SELECT](#select)
+         * [Получение одной записи](#получение-одной-записи)
+         * [Получение нескольких записей](#получение-нескольких-записей)
+         * [Использование функции агрегирования, приведение типа, объединения и условия contains,](#использование-функции-агрегирования-приведение-типа-объединения-и-условия-contains)
+         * [Сложные запросы](#сложные-запросы)
+      * [UPDATE/Обновление](#updateобновление)
+      * [Синхронизация изменений с базой данных: Session Flush](#синхронизация-изменений-с-базой-данных-session-flush)
+         * [Описание](#описание-2)
+         * [Причины использования flush](#причины-использования-flush)
+      * [Сброс состояния объектов: expire и expire_all](#сброс-состояния-объектов-expire-и-expire_all)
+         * [Описание](#описание-3)
+         * [Expire all](#expire-all)
+      * [Актуализация данных: Refresh](#актуализация-данных-refresh)
+      * [Указание необязательности поля](#указание-необязательности-поля)
+      * [Enum поле](#enum-поле)
+      * [Вторичный ключ](#вторичный-ключ)
+      * [Поле created_at](#поле-created_at)
+      * [Поле updated_at](#поле-updated_at)
+      * [Кастомные типы](#кастомные-типы)
+         * [Рядом с моделями](#рядом-с-моделями)
+         * [Рядом с классом Base](#рядом-с-классом-base)
+   * [Relationships](#relationships)
+      * [Lazy Load / ленивая загрузка](#lazy-load--ленивая-загрузка)
+      * [Joined Load](#joined-load)
+      * [Select in load](#select-in-load)
+      * [Фильтрация при работе с Relationships](#фильтрация-при-работе-с-relationships)
+      * [Различие join и joinedload](#различие-join-и-joinedload)
+      * [Ссылки в Relationship](#ссылки-в-relationship)
+         * [Самая простая реализация](#самая-простая-реализация)
+         * [back_populates и backref](#back_populates-и-backref)
+      * [Явное указание условий соединения и сортировки](#явное-указание-условий-соединения-и-сортировки)
+      * [Загрузка связанных объектов с помощью .join()](#загрузка-связанных-объектов-с-помощью-join)
+      * [Лимитированная выборка связанных данных](#лимитированная-выборка-связанных-данных)
+      * [Index и CheckConstraint](#index-и-checkconstraint)
+      * [Ограничение подгружаемых связей](#ограничение-подгружаемых-связей)
+
 # SqlAlchemy
 
 Позволяет описывать структуру БД и взаимодействие с ней на ЯП Python.
@@ -12,7 +85,7 @@
 - Единый стиль написания запросов
 - Удобно работать с вложенными структурами
 
-### Ресурсы
+## Ресурсы
 
 - https://lectureswww.readthedocs.io/6.www.sync/2.codding/9.databases/2.sqlalchemy/0.engine.html#create-engine
 - https://pythonru.com/biblioteki/ustanovka-i-podklyuchenie-sqlalchemy-k-baze-dannyh
@@ -50,11 +123,8 @@ SQL — это стандартный язык для работы с базам
 
 После установки соответствующего драйвера диалект обрабатывает все отличия, что позволяет сосредоточиться на создании самого приложения.
 
+## Создание движка
 
-## Database Connection
-
-
-**Создаем движок**
 - url - строка подключения к БД
     - DSN (Data Source Name) - это строка или набор параметров, используемых для определения и настройки подключения к базе данных или другому источнику данных. В отличие от URL, который чаще всего используется в контексте веб-приложений и имеет строго определенный формат, DSN обычно предоставляет более гибкий и специфический для конкретной базы данных способ определения соединения.
     - формат: dialect+driver://username:password@host:port/database
@@ -69,11 +139,28 @@ engine = create_engine(
     pool_size=5,
     max_overflow=10
 )
-
 ```
 
-### Использование контекстного менеджера
+## Session
 
+Когда мы входим в сессию, открывается транзакция
+
+Предоставляет удобный интерфейс для выполнения запросов, добавления, изменения и удаления данных в базе данных.
+
+- позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
+- отслеживает изменения в объекте и авто. генерирует SQL запросы
+- кэширует запросы и рез-ты выпол-ия
+- эффективно управляет соединением с БД
+
+## Фабрика сессий: работа с сессиями
+
+Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
+
+```python
+session_factory = sessionmaker(engine)
+```
+
+## Использование контекстного менеджера with
 
 Преимущества:
 - Автоматическое управление транзакциями (Например, с помощью контекстного менеджера session в SQLAlchemy вы можете автоматически открывать, фиксировать и откатывать транзакции, обеспечивая целостность данных.)
@@ -81,11 +168,9 @@ engine = create_engine(
 - Безопасное обращение с ресурсами - даже в случае исключения, гарантируется что закрытие будет завершено правильно
 - Читаемость кода
 
+## Создание соединения с БД
 
-## Первый запрос
-
-
-Для создании нового соединения с базой у engine есть 2 метода:
+Для создания нового соединения с базой у engine есть 2 метода:
 - .begin()
     - начинает новую транзакцию
     - возвращает объект транзакции
@@ -98,12 +183,53 @@ engine = create_engine(
 
 Т.к. явное лучше не явного, лучше использовать connect() и явно прописывать conn.commit():
 
+## Отражение / Reflection
+
+Автоматическое создание объекта модели на основе существующей структуры БД.
+
+Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
+
+```python
+metadata2 = MetaData()
+workers_reflection = Table("workers", metadata2, autoload_with=engine)
+print(workers_reflection.primary_key)
+```
+
+Или можно сделать отражение всей БД
+
+```python
+metadata2 = MetaData()
+metadata2.reflect(bind=engine)
+tables = metadata2.tables
+workers_table = metadata2.tables["workers"]
+print(tables.keys())
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/reflection.html)
+
+## Интроспекция / Introspection
+
+Анализ схемы БД во время выполнения
+
+```python
+from sqlalchemy import inspect
+inspector = inspect(engine)
+print(inspector.get_table_names())
+print(inspector.get_columns('workers'))
+```
+
+[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
+
+## Сырой запрос через text
+
 ```python
 with engine.connect() as conn:
     res = conn.execute(text("SELECT VERSION()"))
     print(res)
     conn.commit()
 ```
+
+## Получение одной строки
 
 Чтобы вернуть одну строчку, можно использовать на результате res метод .one()/.first() (но в запросе все равно вытащиться все строки и one() будет работать на уже полученных данных, хранящихся в RAM), или все строчки - .all()
 
@@ -120,14 +246,18 @@ with engine.connect() as conn:
 
 Причины создания:
 - для определения структуры базы данных (таблицы, столбцы, индексы и ограничения)
-- автоматическое генерирования запросов на создание и изменение
+- автоматическое генерирование запросов на создание и изменение
 - облегчает работу с миграциями
 
-### Описание таблиц в императивном стиле
+## Императивный стиль / SQLAlchemy Core
+
+### Описание
 
 - В императивном стиле таблицы определяются непосредственно с использованием языка Python.
 - Вы создаете объекты таблиц, столбцов, индексов и ограничений напрямую в коде Python с помощью классов и методов SQLAlchemy.
 - Этот стиль более прямолинеен и ближе к стандартному программированию на Python.
+
+### Пример создания таблицы
 
 ```python
 workers_table = Table(
@@ -138,7 +268,77 @@ workers_table = Table(
 )
 ```
 
-## SELECT через Core
+### Методы объекта Table
+
+- Имя таблицы:
+`workers_table.name`
+
+- Поля таблицы:
+```python
+print(workers_table.c)
+```
+
+- Инспектирования полей таблицы:
+
+```python
+print(workers_table.c.username)
+```
+
+- Name и Type полей таблицы:
+
+```python
+print(workers_table.c.username.name)
+print(workers_table.c.username.type)
+```
+
+- Первичные ключи:
+
+```python
+print(workers_table.primary_key)
+```
+
+#### SQL выражения
+
+- sqlalchemy.schema.Table.select()
+- sqlalchemy.schema.Table.delete()
+- sqlalchemy.schema.Table.insert()
+- sqlalchemy.schema.Table.update()
+- sqlalchemy.schema.Table.join()
+- sqlalchemy.schema.Table.outerjoin()
+
+#### Удаление отдельной таблицы
+
+Также можно создать/удалить отдельно таблицу, вызвав метод класса Table *create*/*drop*
+
+```python
+workers_table.create(engine)
+```
+
+### INSERT/Вставка данных
+
+#### Сырой запрос
+```python
+file_path = Path(__file__).parent / 'test_data.sql'
+with open(file_path) as sql_file:
+	sql_stmt = sql_file.read()
+	with engine.connect() as conn:
+		conn.execute(text(sql_stmt))
+		conn.commit()
+```
+
+#### С помощью Query Builder / строителя запросов
+
+```python
+sql_stmt = insert(models.workers_table).values([
+		{"username": "John"},
+		{"username": "Michael"},
+	])
+with engine.connect() as conn:
+	conn.execute(sql_stmt)
+	conn.commit()
+```
+
+### SELECT запрос
 
 ```python
 with engine.connect() as conn:
@@ -150,9 +350,9 @@ with engine.connect() as conn:
 `.all()` - возвращает все строки не в виде объекта, а в виде списка кортежей
 `.scalars().all()` - возвращает первый столбец в каждой строке (полезно при SELECT запросе через ORM)
 
-## UPDATE через Core
+### UPDATE запрос
 
-### Сырой запрос
+#### Сырой запрос
 
 ```python
 def update_worker(worker_id: int = 1, username: str = "Emanuel"):
@@ -163,7 +363,11 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 		conn.commit()
 ```
 
-### С помощью Query Builder / строителя запросов
+⚠️**Важно**
+
+Всегда использовать bindparams для предотвращения sql-инъекций
+
+#### С помощью Query Builder / строителя запросов
 
 ```python
 def update_worker(worker_id: int = 1, username: str = "Emanuel"):
@@ -184,7 +388,9 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 - `.filter()` - синоним для .where() `.filter(workers_table.c.username == 'John')`
 - `.filter_by()` - столбцы указываются в kwarg стиле (без указания названия таблицы) `.filter_by(id=2)`
 
-## Описание таблиц в декларативном стиль
+## Декларативный стиль / SQLAlchemy ORM
+
+### Описание
 
 Декларативный означает что код описывает что должно быть сделано, но не как должно.
 
@@ -194,6 +400,7 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 
 **DeclarativeBase** - базовый класс для объявления моделей данных в декларативном стиле
 
+### Создание базового класса Base
 ```python
 from sqlalchemy.orm import DeclarativeBase
 class Base(DeclarativeBase):
@@ -210,7 +417,7 @@ Base.metadata.create_all(engine)
 Base.metadata.drop_all(engine)
 ```
 
-### Вставка данных в таблицу
+### INSERT/Вставка данных
 
 ```python
 with session_factory() as session:
@@ -222,7 +429,9 @@ with session_factory() as session:
     session.commit()
 ```
 
-### Получение одной записи
+### SELECT
+
+#### Получение одной записи
 
 Если в таблице первичный ключ только один:
 ```python
@@ -240,7 +449,7 @@ worker_jack = session.get(Workers, (1, "John"))
 worker_jack = session.get(Workers, {"id": 1, "username": "John"})
 ```
 
-### Получение нескольких записей
+#### Получение нескольких записей
 
 ```python
 with session_factory() as session:
@@ -251,20 +460,7 @@ with session_factory() as session:
 
 Разница с Core в том, что sqlalchemy получит данные и превратит их в модели (в инстансы/экземпляры модели Workers)
 
-### Обновление через ORM
-```python
-def update_worker(worker_id: int = 1, username: str = "emanuel"):
-    with session_factory() as session:
-        worker_michael = session.get(Workers, worker_id)
-        worker_michael.username = username
-        session.commit()
-```
-
-**⚠️ Важно**
-
-При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
-
-### Запрос SELECT
+#### Использование функции агрегирования, приведение типа, объединения и условия contains,
 
 ```sql
 SELECT resumes.workload, CAST(avg(resumes.compensation) AS INTEGER) AS avg_compensation
@@ -295,7 +491,7 @@ def select_resumes_avg_compensation(like_language: str = "Python"):
 		print(result[0].avg_compensation)
 ```
 
-### Сложные запросы
+#### Сложные запросы
 
 ```sql
 WITH helper2 AS (
@@ -323,19 +519,36 @@ ORDER BY
   compensation_diff DESC;
 ```
 
+### UPDATE/Обновление
+```python
+def update_worker(worker_id: int = 1, username: str = "emanuel"):
+    with session_factory() as session:
+        worker_michael = session.get(Workers, worker_id)
+        worker_michael.username = username
+        session.commit()
+```
 
-### Session Flush
+**⚠️ Важно**
+
+При обновлении с использованием ORM делается 2 запроса: сначала на получение строки, далее на обновление
+
+### Синхронизация изменений с базой данных: Session Flush
+
+#### Описание
 
 Используется для синхронизации всех изменений объектов модели с базой данных, но без фиксации транзакции.
 
 Отправляет все ожидающие команды (например, добавление, изменение, удаление записей) в базу данных, но не фиксирует изменения, как это делает session.commit().
 
-Причины использовать flush:
+#### Причины использования flush
+
 - предварительная проверка целостности (все ли данные прошли валидацию полей БД)
 - повышение производительности (когда имеется большой объем данных, которые должны быть выполнены при фиксации изменений)
 - Обновление автоматически генерируемых значений (например auto-increment id, или created_at, updated_at)
 
-### expire/expire_all
+### Сброс состояния объектов: expire и expire_all
+
+#### Описание
 
 Используется для сброса изменений до фиксации.
 
@@ -350,7 +563,7 @@ print(worker_michael.username) # здесь будет сделан запрос
 session.commit()
 ```
 
-### refresh
+### Актуализация данных: Refresh
 
 Используется для получения самых актуальных данных
 
@@ -360,13 +573,6 @@ worker_michael.username = username
 session.refresh(worker_michael)
 session.commit()
 ```
-
-#### Session Factory создается так:
-
-```python
-session_factory = sessionmaker(engine)
-```
-
 
 ### Указание необязательности поля
 ```python
@@ -384,8 +590,8 @@ compensation: Mapped[int | None]
 from enum import Enum
 
 class Workload(Enum):
-    parttime = "parttime"
-    fulltime = "fulltime"
+	parttime = "parttime"
+	fulltime = "fulltime"
 
 class Resumes(Base):
 	...
@@ -396,8 +602,8 @@ class Resumes(Base):
 
 ```python
 class Workers(Base):
-    ...
-    id: Mapped[int] = mapped_column(primary_key=True)
+	...
+	id: Mapped[int] = mapped_column(primary_key=True)
 
 
 class Resumes(Base):
@@ -444,7 +650,7 @@ updated_at = Mapped[datetime] = mapped_column(
 
 Т.к. мы не можем быть уверены, что обновление всегда будет происходить при помощи ORM модели, лучшим решением будет в postgres обновлять это поле при помощи триггера
 
-```python
+```sql
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -461,6 +667,8 @@ EXECUTE FUNCTION update_updated_at();
 
 ### Кастомные типы
 
+#### Рядом с моделями
+
 ```python
 from typing import Annotated
 
@@ -471,9 +679,10 @@ class Workers(Base):
     id: Mapped[intpk]
 ```
 
-### Кастомные типы рядом с классом Base
+#### Рядом с классом Base
 
-##### database.py
+**database.py**
+
 ```python
 from typing import Annotated
 
@@ -486,7 +695,7 @@ class Base(DeclarativeBase):
 	}
 ```
 
-##### models.py
+**models.py**
 
 ```python
 from database import Base, str_256
@@ -497,130 +706,9 @@ class Resumes(Base):
 	title: Mapped[str_256]
 ```
 
-## Вставка данных
+## Relationships
 
-### Сырой запрос
-```python
-file_path = Path(__file__).parent / 'test_data.sql'
-with open(file_path) as sql_file:
-	sql_stmt = sql_file.read()
-	with engine.connect() as conn:
-		conn.execute(text(sql_stmt))
-		conn.commit()
-```
-
-### С помощью Query Builder / строителя запросов
-
-```python
-sql_stmt = insert(models.workers_table).values([
-        {"username": "John"},
-        {"username": "Michael"},
-    ])
-    with engine.connect() as conn:
-        conn.execute(sql_stmt)
-        conn.commit()
-```
-
-## Методы объекта Table
-
-- Имя таблицы:
-```python
-workers_table.name
-```
-
-- Поля таблицы:
-```python
-print(workers_table.c)
-```
-
-- Инспектирования полей таблицы:
-
-```python
-print(workers_table.c.username)
-```
-
-- Name и Type полей таблицы:
-
-```python
-print(workers_table.c.username.name)
-print(workers_table.c.username.type)
-```
-
-- Первичные ключи:
-
-```python
-print(workers_table.primary_key)
-```
-
-### SQL выражения
-
-- sqlalchemy.schema.Table.select()
-- sqlalchemy.schema.Table.delete()
-- sqlalchemy.schema.Table.insert()
-- sqlalchemy.schema.Table.update()
-- sqlalchemy.schema.Table.join()
-- sqlalchemy.schema.Table.outerjoin()
-
-Также можно создать/удалить отдельно таблицу, вызвав метод класса Table *create*/*drop*
-
-```python
-workers_table.create(engine)
-```
-## Отражение / Reflection
-
-Автоматическое создание объекта модели на основе существующей структуры БД.
-
-Когда вы отражаете базу данных в SQLAlchemy, библиотека анализирует метаданные базы данных (таблицы, столбцы, индексы и ограничения) и автоматически создает соответствующие объекты модели
-
-```python
-metadata2 = MetaData()
-workers_reflection = Table("workers", metadata2, autoload_with=engine)
-print(workers_reflection.primary_key)
-```
-
-Или можно сделать отражение всей БД
-
-```python
-metadata2 = MetaData()
-metadata2.reflect(bind=engine)
-tables = metadata2.tables
-workers_table = metadata2.tables["workers"]
-print(tables.keys())
-```
-
-[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/reflection.html)
-
-## Интроспекция / Introspection
-
-Анализ схемы БД во время выполнения
-
-```python
-from sqlalchemy import inspect
-inspector = inspect(engine)
-print(inspector.get_table_names())
-print(inspector.get_columns('workers'))
-```
-
-[Перейти к документации](https://docs.sqlalchemy.org/en/20/core/inspection.html#sqlalchemy.inspect)
-
-## Session
-
-Когда мы входим в сессию, открывается транзакция
-
-Предоставляет удобный интерфейс для выполнения запросов, добавления, изменения и удаления данных в базе данных.
-
-- позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
-- отслеживает изменения в объекте и авто. генерирует SQL запросы
-- кэширует запросы и рез-ты выпол-ия
-- эффективно управляет соединением с БД
-
-### sessionmaker
-Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
-
-
-### Relationships
-
-#### Lazy Load / ленивая загрузка
+### Lazy Load / ленивая загрузка
 
 Данные подгружаются только тогда, когда нужны. Заранее связанные данные Join'ом не загружаются.
 
@@ -635,6 +723,7 @@ print(inspector.get_columns('workers'))
 Выполнятся N+1 запросов, потому что для каждого работника выполнится еще по одному запросу для получения резюме
 
 ⚠️**Важно**
+
 Ленивая загрузка НЕ работает в асинхронном варианте
 
 ```python
@@ -658,7 +747,7 @@ def select_workers_lazy_relationship():
 		print(result[0].resumes)
 ```
 
-#### Joined Load
+### Joined Load
 
 Не подходит для one-to-many или many-to-many (потому что из БД выгружаются лишние, дублирующие данные)
 
@@ -676,7 +765,7 @@ def select_workers_joined_relationship():
 		print(result[0].resumes)
 ```
 
-#### Select in load
+### Select in load
 
 Подходит для one-to-many или many-to-many
 
@@ -689,7 +778,7 @@ def select_workers_selectin_relationship():
 		print(result[0].resumes)
 ```
 
-#### __repr__ метод в базовом классе Base для ORM моделей
+### __repr__ метод в базовом классе Base для ORM моделей
 
 ```python
 class Base(DeclarativeBase):
@@ -717,7 +806,7 @@ class Resumes(Base):
 	include_repr_columns = ("workload", )
 ```
 
-#### Фильтрация при работе с Relationships
+### Фильтрация при работе с Relationships
 
 Для joinedload он включит фильтрацию в ON
 
@@ -729,13 +818,13 @@ query = select(Workers).options(joinedload(Workers.resumes.and_(Resumes.workload
 FROM workers LEFT OUTER JOIN resumes AS resumes_1 ON workers.id = resumes_1.worker_id AND resumes_1.workload = 'parttime'
 ```
 
-#### Различие join и joinedload
+### Различие join и joinedload
 
 Основное различие между join и joinedload заключается в том, что join используется для объединения таблиц при выполнении запросов SQL, в то время как joinedload используется для эффективной загрузки связанных объектов в память в рамках одного запроса к базе данных в SQLAlchemy.
 
-#### Ссылки в Relationship
+### Ссылки в Relationship
 
-##### Самая простая реализация
+#### Самая простая реализация
 
 ```python
 class Workers(Base):
@@ -750,7 +839,7 @@ class Resumes(Base):
 	worker: Mapped["Workers"] = relationship()
 ```
 
-##### back_populates и backref
+#### back_populates и backref
 
 Используются для определения двунаправленных отношений (bidirectional relationships) между моделями данных.
 
@@ -777,7 +866,7 @@ class Resumes(Base):
 	)
 ```
 
-#### Явное указание условий соединения и сортировки
+### Явное указание условий соединения и сортировки
 
 ```python
 class Workers(Base):
@@ -789,13 +878,17 @@ class Workers(Base):
 	)
 ```
 
-#### Загрузка связанных объектов при .join
+### Загрузка связанных объектов с помощью .join()
 
 Для этого необходимо указать опцию `contains_eager`
 
 При использовании contains_eager(Workers.resumes) вы говорите SQLAlchemy загрузить связанные объекты Resumes вместе с объектами Workers в рамках одного запроса.
 
 Полезно, когда вы знаете, что нужно получить связанные объекты вместе с основными объектами и хотите избежать доп. запросов к БД.
+
+⚠️ **Важно**
+
+Когда делаем `.join()`, обязательно нужно на результирующем наборе сделать `.unique()`
 
 ```python
 def select_workers_contains_eager():
@@ -809,7 +902,7 @@ def select_workers_contains_eager():
 		result = res.unique().scalars().all()
 ```
 
-#### Лимитированная выборка связанных данных
+### Лимитированная выборка связанных данных
 
 - `scalar_subquery()`
 Преобразует результат запроса в скалярное значение (одно значение) вместо списка или кортежа.
@@ -836,7 +929,7 @@ query = (
 )
 ```
 
-#### Index и CheckConstraint
+### Index и CheckConstraint
 
 ```python
 from sqlalchemy import CheckConstraint
@@ -844,8 +937,12 @@ from sqlalchemy import Index
 
 class Resumes(Base):
     ...
-	__table_args__ = (
+    __table_args__ = (
 		Index("resumes_title_idx", "title"),
 		CheckConstraint("compensation > 0", name="resumes_check_compensation_gt_0")
 	)
 ```
+
+### Ограничение подгружаемых связей
+
+[Ссылка на stackoverflow](https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results)
