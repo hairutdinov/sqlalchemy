@@ -805,13 +805,17 @@ class Workers(Base):
 	)
 ```
 
-#### Загрузка связанных объектов при .join
+#### Загрузка связанных объектов с помощью .join()
 
 Для этого необходимо указать опцию `contains_eager`
 
 При использовании contains_eager(Workers.resumes) вы говорите SQLAlchemy загрузить связанные объекты Resumes вместе с объектами Workers в рамках одного запроса.
 
 Полезно, когда вы знаете, что нужно получить связанные объекты вместе с основными объектами и хотите избежать доп. запросов к БД.
+
+⚠️ **Важно**
+
+Когда делаем `.join()`, обязательно нужно на результирующем наборе сделать `.unique()`
 
 ```python
 def select_workers_contains_eager():
@@ -824,8 +828,6 @@ def select_workers_contains_eager():
 		res = session.execute(query)
 		result = res.unique().scalars().all()
 ```
-
-
 
 #### Лимитированная выборка связанных данных
 
@@ -867,3 +869,7 @@ class Resumes(Base):
 		CheckConstraint("compensation > 0", name="resumes_check_compensation_gt_0")
 	)
 ```
+
+### limit the joinedloaded results
+
+[Ссылка на stackoverflow](https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results)
