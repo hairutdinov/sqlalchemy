@@ -11,6 +11,8 @@ from sqlalchemy import MetaData
 from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy import text
+from sqlalchemy import CheckConstraint
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -51,6 +53,10 @@ class Workload(Enum):
 
 class Resumes(Base):
     __tablename__ = "resumes"
+    __table_args__ = (
+        Index("resumes_title_idx", "title"),
+        CheckConstraint("compensation > 0", name="resumes_check_compensation_gt_0")
+    )
 
     id: Mapped[intpk]
     title: Mapped[str_256]

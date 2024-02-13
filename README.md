@@ -835,3 +835,17 @@ query = (
 	.options(contains_eager(Workers.resumes))
 )
 ```
+
+#### Index и CheckConstraint
+
+```python
+from sqlalchemy import CheckConstraint
+from sqlalchemy import Index
+
+class Resumes(Base):
+    ...
+	__table_args__ = (
+		Index("resumes_title_idx", "title"),
+		CheckConstraint("compensation > 0", name="resumes_check_compensation_gt_0")
+	)
+```
