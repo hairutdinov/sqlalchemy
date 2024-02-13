@@ -33,7 +33,9 @@ class Workers(Base):
     id: Mapped[intpk]
     username: Mapped[str]
 
-    resumes: Mapped[list["Resumes"]] = relationship()
+    resumes: Mapped[list["Resumes"]] = relationship(
+        back_populates="worker"
+    )
 
 
 class Workload(Enum):
@@ -54,7 +56,9 @@ class Resumes(Base):
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    worker: Mapped["Workers"] = relationship()
+    worker: Mapped["Workers"] = relationship(
+        back_populates="resumes"
+    )
 
     include_repr_columns = ("workload",)
 

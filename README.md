@@ -623,7 +623,13 @@ print(inspector.get_columns('workers'))
 #### Lazy Load / ленивая загрузка
 
 Данные подгружаются только тогда, когда нужны. Заранее связанные данные Join'ом не загружаются.
-Поэтому тут присутствует проблема N+1 - есть один запрос, и потом N запросов (где N - кол-во работников) когда для каждого работника забираем его резюме.
+
+Проблема N+один - для любых N загруженных объектов обращение к их атрибутам в режиме ленивой загрузки выполнит N+1 операторов SELECT
+
+Например:
+Загрузили N работников
+Далее обратились к резюме первого работника: result[0].resumes
+Выполнятся N+1 запросов, потому что для каждого работника выполнится еще по одному запросу для получения резюме
 
 ⚠️**Важно**
 Ленивая загрузка НЕ работает в асинхронном варианте
@@ -705,4 +711,64 @@ class Base(DeclarativeBase):
 class Resumes(Base):
 	...
 	include_repr_columns = ("workload", )
+```
+
+#### Фильтрация при работе с Relationships
+
+Для joinedload он включит фильтрацию в ON
+
+```python
+query = select(Workers).options(joinedload(Workers.resumes.and_(Resumes.workload == Workload.parttime)))
+```
+
+```sql
+FROM workers LEFT OUTER JOIN resumes AS resumes_1 ON workers.id = resumes_1.worker_id AND resumes_1.workload = 'parttime'
+```
+
+#### Различие join и joinedload
+
+Основное различие между join и joinedload заключается в том, что join используется для объединения таблиц при выполнении запросов SQL, в то время как joinedload используется для эффективной загрузки связанных объектов в память в рамках одного запроса к базе данных в SQLAlchemy.
+
+#### Ссылки в Relationship
+
+##### Самая простая реализация
+
+```python
+class Workers(Base):
+	...
+	resumes: Mapped[list["Resumes"]] = relationship()
+
+
+class Resumes(Base):
+	...
+	worker_id: Mapped[int] = mapped_column(ForeignKey("workers.id", ondelete="CASCADE"))
+	
+	worker: Mapped["Workers"] = relationship()
+```
+
+##### back_populates и backref
+
+Используются для определения двунаправленных отношений (bidirectional relationships) между моделями данных.
+
+Различие:
+- **back_populates** определяется в обеих моделях данных, участвующих в отношении,
+- в то время как **backref** определяется только в одной модели данных и автоматически создает обратное отношение.
+
+Рекомендуется использовать **back_populates**
+
+```python
+class Workers(Base):
+	...
+	resumes: Mapped[list["Resumes"]] = relationship(
+		back_populates="worker"
+	)
+
+
+class Resumes(Base):
+	...
+	worker_id: Mapped[int] = mapped_column(ForeignKey("workers.id", ondelete="CASCADE"))
+	
+	worker: Mapped["Workers"] = relationship(
+		back_populates="resumes"
+	)
 ```
