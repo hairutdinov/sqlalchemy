@@ -37,6 +37,12 @@ class Workers(Base):
         back_populates="worker"
     )
 
+    resumes_parttime: Mapped[list["Resumes"]] = relationship(
+        back_populates="worker",
+        primaryjoin="and_(Workers.id == Resumes.worker_id, Resumes.workload == 'parttime')",
+        order_by="Resumes.id.desc()"
+    )
+
 
 class Workload(Enum):
     parttime = "parttime"

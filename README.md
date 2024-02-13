@@ -627,8 +627,11 @@ print(inspector.get_columns('workers'))
 Проблема N+один - для любых N загруженных объектов обращение к их атрибутам в режиме ленивой загрузки выполнит N+1 операторов SELECT
 
 Например:
+
 Загрузили N работников
+
 Далее обратились к резюме первого работника: result[0].resumes
+
 Выполнятся N+1 запросов, потому что для каждого работника выполнится еще по одному запросу для получения резюме
 
 ⚠️**Важно**
@@ -658,6 +661,7 @@ def select_workers_lazy_relationship():
 #### Joined Load
 
 Не подходит для one-to-many или many-to-many (потому что из БД выгружаются лишние, дублирующие данные)
+
 Подходит для many-to-one или one-to-one.
 
 ```python
@@ -771,4 +775,63 @@ class Resumes(Base):
 	worker: Mapped["Workers"] = relationship(
 		back_populates="resumes"
 	)
+```
+
+#### Явное указание условий соединения и сортировки
+
+```python
+class Workers(Base):
+	...
+	resumes_parttime: Mapped[list["Resumes"]] = relationship(
+		back_populates="worker",
+		primaryjoin="and_(Workers.id == Resumes.worker_id, Resumes.workload == 'parttime')",
+		order_by="Resumes.id.desc()"
+	)
+```
+
+#### Загрузка связанных объектов при .join
+
+Для этого необходимо указать опцию `contains_eager`
+
+При использовании contains_eager(Workers.resumes) вы говорите SQLAlchemy загрузить связанные объекты Resumes вместе с объектами Workers в рамках одного запроса.
+
+Полезно, когда вы знаете, что нужно получить связанные объекты вместе с основными объектами и хотите избежать доп. запросов к БД.
+
+```python
+def select_workers_contains_eager():
+	with session_factory() as session:
+		query = (
+			select(Workers)
+			.join(Workers.resumes)
+			.options(contains_eager(Workers.resumes))
+		)
+		res = session.execute(query)
+		result = res.unique().scalars().all()
+```
+
+#### Лимитированная выборка связанных данных
+
+- `scalar_subquery()`
+Преобразует результат запроса в скалярное значение (одно значение) вместо списка или кортежа.
+Это означает, что подзапрос будет возвращать только одно значение, а не список значений или строки.
+
+- `correlate()`
+Используется для корреляции подзапроса с основным запросом, что позволяет использовать значения из основного запроса в подзапросе.
+В данном случае метод correlate(Workers) указывает, что подзапрос должен быть скоррелирован с таблицей Workers, что позволяет использовать значения из Workers внутри подзапроса.
+Необходимо для фильтрации по Workers.id
+
+```python
+sub_query = (
+	select(Resumes.id.label("parttime_resume_id"))
+	.filter(Resumes.worker_id == Workers.id)  # Нужно для join'а в query
+	.order_by(Workers.id.desc())
+	.limit(2)
+	.scalar_subquery()
+	.correlate(Workers)
+)
+query = (
+	select(Workers)
+	.join(Resumes, Resumes.id.in_(sub_query))
+	.options(contains_eager(Workers.resumes))
+)
 ```

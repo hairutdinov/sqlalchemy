@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import contains_eager
 
 
 class Core:
@@ -202,9 +203,16 @@ class Core:
     @staticmethod
     def select_workers_joined_relationship():
         with session_factory() as session:
-            query = select(Workers).options(joinedload(Workers.resumes))
+            query = select(Workers).options(joinedload(Workers.resumes.and_(Resumes.workload == Workload.parttime)))
+            # query = select(Workers).\
+            #     join(Workers.resumes). \
+            #     options(contains_eager(Workers.resumes)).\
+            #     filter(Resumes.workload == Workload.parttime)
+            print("query", end="\n" * 2)
+            print(query.compile(compile_kwargs={"literal_binds": True}), end="\n" * 2)
             res = session.execute(query)
             result = res.unique().scalars().all()
+            print(len(result))
             print(result[0].resumes)
 
     @staticmethod
@@ -214,3 +222,54 @@ class Core:
             res = session.execute(query)
             result = res.unique().scalars().all()
             print(result[0].resumes)
+
+    @staticmethod
+    def select_workers_with_condition_relationship():
+        with session_factory() as session:
+            query = (
+                select(Workers)
+                .options(
+                    selectinload(Workers.resumes_parttime)
+                )
+            )
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result[1].resumes_parttime)
+
+    @staticmethod
+    def select_workers_contains_eager():
+        with session_factory() as session:
+            query = (
+                select(Workers)
+                .join(Workers.resumes)
+                .options(contains_eager(Workers.resumes))
+            )
+            print(query.compile(compile_kwargs={"literal_binds": True}), end="\n" * 2)
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(len(result))
+            print(dir(result[0].resumes))
+            # print(result[0].resumes)
+
+    @staticmethod
+    def select_workers_contains_eager_with_limit():
+        with session_factory() as session:
+            sub_query = (
+                select(Resumes.id.label("parttime_resume_id"))
+                .filter(Resumes.worker_id == Workers.id)  # Нужно для join'а в query
+                .order_by(Workers.id.desc())
+                .limit(2)
+                .scalar_subquery()
+                .correlate(Workers)
+            )
+            query = (
+                select(Workers)
+                .join(Resumes, Resumes.id.in_(sub_query))
+                .options(contains_eager(Workers.resumes))
+            )
+            print(query.compile(compile_kwargs={"literal_binds": True}), end="\n" * 2)
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(len(result))
+            print(dir(result[0].resumes))
+            # print(result[0].resumes)
