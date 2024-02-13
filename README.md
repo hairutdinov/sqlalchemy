@@ -57,18 +57,18 @@
          * [Рядом с моделями](#рядом-с-моделями)
          * [Рядом с классом Base](#рядом-с-классом-base)
    * [Relationships](#relationships)
-         * [Lazy Load / ленивая загрузка](#lazy-load--ленивая-загрузка)
-         * [Joined Load](#joined-load)
-         * [Select in load](#select-in-load)
-         * [Фильтрация при работе с Relationships](#фильтрация-при-работе-с-relationships)
-         * [Различие join и joinedload](#различие-join-и-joinedload)
-         * [Ссылки в Relationship](#ссылки-в-relationship)
-            * [Самая простая реализация](#самая-простая-реализация)
-            * [back_populates и backref](#back_populates-и-backref)
-         * [Явное указание условий соединения и сортировки](#явное-указание-условий-соединения-и-сортировки)
-         * [Загрузка связанных объектов с помощью .join()](#загрузка-связанных-объектов-с-помощью-join)
-         * [Лимитированная выборка связанных данных](#лимитированная-выборка-связанных-данных)
-         * [Index и CheckConstraint](#index-и-checkconstraint)
+      * [Lazy Load / ленивая загрузка](#lazy-load--ленивая-загрузка)
+      * [Joined Load](#joined-load)
+      * [Select in load](#select-in-load)
+      * [Фильтрация при работе с Relationships](#фильтрация-при-работе-с-relationships)
+      * [Различие join и joinedload](#различие-join-и-joinedload)
+      * [Ссылки в Relationship](#ссылки-в-relationship)
+         * [Самая простая реализация](#самая-простая-реализация)
+         * [back_populates и backref](#back_populates-и-backref)
+      * [Явное указание условий соединения и сортировки](#явное-указание-условий-соединения-и-сортировки)
+      * [Загрузка связанных объектов с помощью .join()](#загрузка-связанных-объектов-с-помощью-join)
+      * [Лимитированная выборка связанных данных](#лимитированная-выборка-связанных-данных)
+      * [Index и CheckConstraint](#index-и-checkconstraint)
       * [Ограничение подгружаемых связей](#ограничение-подгружаемых-связей)
 
 # SqlAlchemy
@@ -708,7 +708,7 @@ class Resumes(Base):
 
 ## Relationships
 
-#### Lazy Load / ленивая загрузка
+### Lazy Load / ленивая загрузка
 
 Данные подгружаются только тогда, когда нужны. Заранее связанные данные Join'ом не загружаются.
 
@@ -747,7 +747,7 @@ def select_workers_lazy_relationship():
 		print(result[0].resumes)
 ```
 
-#### Joined Load
+### Joined Load
 
 Не подходит для one-to-many или many-to-many (потому что из БД выгружаются лишние, дублирующие данные)
 
@@ -765,7 +765,7 @@ def select_workers_joined_relationship():
 		print(result[0].resumes)
 ```
 
-#### Select in load
+### Select in load
 
 Подходит для one-to-many или many-to-many
 
@@ -778,7 +778,7 @@ def select_workers_selectin_relationship():
 		print(result[0].resumes)
 ```
 
-#### __repr__ метод в базовом классе Base для ORM моделей
+### __repr__ метод в базовом классе Base для ORM моделей
 
 ```python
 class Base(DeclarativeBase):
@@ -806,7 +806,7 @@ class Resumes(Base):
 	include_repr_columns = ("workload", )
 ```
 
-#### Фильтрация при работе с Relationships
+### Фильтрация при работе с Relationships
 
 Для joinedload он включит фильтрацию в ON
 
@@ -818,13 +818,13 @@ query = select(Workers).options(joinedload(Workers.resumes.and_(Resumes.workload
 FROM workers LEFT OUTER JOIN resumes AS resumes_1 ON workers.id = resumes_1.worker_id AND resumes_1.workload = 'parttime'
 ```
 
-#### Различие join и joinedload
+### Различие join и joinedload
 
 Основное различие между join и joinedload заключается в том, что join используется для объединения таблиц при выполнении запросов SQL, в то время как joinedload используется для эффективной загрузки связанных объектов в память в рамках одного запроса к базе данных в SQLAlchemy.
 
-#### Ссылки в Relationship
+### Ссылки в Relationship
 
-##### Самая простая реализация
+#### Самая простая реализация
 
 ```python
 class Workers(Base):
@@ -839,7 +839,7 @@ class Resumes(Base):
 	worker: Mapped["Workers"] = relationship()
 ```
 
-##### back_populates и backref
+#### back_populates и backref
 
 Используются для определения двунаправленных отношений (bidirectional relationships) между моделями данных.
 
@@ -866,7 +866,7 @@ class Resumes(Base):
 	)
 ```
 
-#### Явное указание условий соединения и сортировки
+### Явное указание условий соединения и сортировки
 
 ```python
 class Workers(Base):
@@ -878,7 +878,7 @@ class Workers(Base):
 	)
 ```
 
-#### Загрузка связанных объектов с помощью .join()
+### Загрузка связанных объектов с помощью .join()
 
 Для этого необходимо указать опцию `contains_eager`
 
@@ -902,7 +902,7 @@ def select_workers_contains_eager():
 		result = res.unique().scalars().all()
 ```
 
-#### Лимитированная выборка связанных данных
+### Лимитированная выборка связанных данных
 
 - `scalar_subquery()`
 Преобразует результат запроса в скалярное значение (одно значение) вместо списка или кортежа.
@@ -929,7 +929,7 @@ query = (
 )
 ```
 
-#### Index и CheckConstraint
+### Index и CheckConstraint
 
 ```python
 from sqlalchemy import CheckConstraint
