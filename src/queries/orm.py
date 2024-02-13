@@ -10,6 +10,8 @@ from sqlalchemy import insert
 from sqlalchemy import Integer
 from sqlalchemy import select
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 
 class Core:
@@ -188,3 +190,27 @@ class Core:
             query = select(cte).order_by(cte.c.compensation_diff.desc())
             print(query.compile(compile_kwargs={"literal_binds": True}))
             print(session.execute(query).all())
+
+    @staticmethod
+    def select_workers_lazy_relationship():
+        with session_factory() as session:
+            query = select(Workers)
+            res = session.execute(query)
+            result = res.scalars().all()
+            print(result[0].resumes)
+
+    @staticmethod
+    def select_workers_joined_relationship():
+        with session_factory() as session:
+            query = select(Workers).options(joinedload(Workers.resumes))
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result[0].resumes)
+
+    @staticmethod
+    def select_workers_selectin_relationship():
+        with session_factory() as session:
+            query = select(Workers).options(selectinload(Workers.resumes))
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result[0].resumes)

@@ -182,7 +182,7 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 Фильтр where можно задавать следующими способами:
 - `.where()` - столбцы указываются в формате <table>.c.<column> `.where(workers_table.c.id == 1)`
 - `.filter()` - синоним для .where() `.filter(workers_table.c.username == 'John')`
-- `.filter_by()` - стобцы указываются в kwarg стиле (без указания названия таблицы) `.filter_by(id=2)`
+- `.filter_by()` - столбцы указываются в kwarg стиле (без указания названия таблицы) `.filter_by(id=2)`
 
 ## Описание таблиц в декларативном стиль
 
@@ -249,7 +249,7 @@ with session_factory() as session:
 	print(result.scalars().all())
 ```
 
-Разница с Core в том, что sqlalchemy получит данные и превратит их в модели (в инстансы/экзэмляры модели Workers)
+Разница с Core в том, что sqlalchemy получит данные и превратит их в модели (в инстансы/экземпляры модели Workers)
 
 ### Обновление через ORM
 ```python
@@ -409,7 +409,7 @@ class Resumes(Base):
 
 Лучше использовать строчную запись вторичного ключа: `"workers.id"`
 
-Действие, которое будет выполняться при удалении родительской записи (на которую ссылкается внешний ключ):
+Действие, которое будет выполняться при удалении родительской записи (на которую ссылается внешний ключ):
 
 ```python
 ForeignKey("workers.id", ondelete="CASCADE")
@@ -442,7 +442,7 @@ updated_at = Mapped[datetime] = mapped_column(
 )
 ```
 
-Т.к. мы не можем быть уверены, что обновление всегда будет происходить при помощи ORM модели, лучшим решением будет в postgres обнолять это поле при помощи триггера
+Т.к. мы не можем быть уверены, что обновление всегда будет происходить при помощи ORM модели, лучшим решением будет в postgres обновлять это поле при помощи триггера
 
 ```python
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -612,7 +612,57 @@ print(inspector.get_columns('workers'))
 - позволяет начать, фиксировать или откатывать транзакцию в зависимости от рез-та
 - отслеживает изменения в объекте и авто. генерирует SQL запросы
 - кэширует запросы и рез-ты выпол-ия
-- эффиктивно управляят соединением с БД
+- эффективно управляет соединением с БД
 
 ### sessionmaker
 Это - фабрика сессий, генерирующая объекты сессий. Предоставляет удобный способ создания сессий с параметрами (движком и др.). Позволяет избежать повтора (DRY).
+
+
+### Relationships
+
+#### Lazy Load / ленивая загрузка
+
+Данные подгружаются только тогда, когда нужны. Заранее связанные данные Join'ом не загружаются.
+Поэтому тут присутствует проблема N+1 - есть один запрос, и потом N запросов (где N - кол-во работников) когда для каждого работника забираем его резюме.
+
+```python
+class Workers(Base):
+	...
+	resumes: Mapped[list["Resumes"]] = relationship()
+```
+
+```python
+class Resumes(Base):
+	...
+	worker: Mapped["Workers"] = relationship()
+```
+
+```python
+def select_workers_lazy_relationship():
+	with session_factory() as session:
+		query = select(Workers)
+		res = session.execute(query)
+		result = res.scalars().all()
+		print(result[0].resumes)
+```
+
+#### Joined Load
+
+Не подходит для one-to-many или many-to-many (потому что из БД выгружаются лишние, дублирующие данные)
+Подходит для many-to-one или one-to-one.
+
+```python
+def select_workers_joined_relationship():
+	with session_factory() as session:
+		query = (
+			select(Workers)
+			.options(joinedload(Workers.resumes))
+		)
+		res = session.execute(query)
+		result = res.unique().scalars().all()
+		print(result[0].resumes)
+```
+
+#### Select in load
+
+Подходит для one-to-many или many-to-many

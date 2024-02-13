@@ -13,6 +13,7 @@ from sqlalchemy import Table
 from sqlalchemy import text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 intpk = Annotated[int, mapped_column(primary_key=True)]
 created_at = Annotated[
@@ -32,6 +33,8 @@ class Workers(Base):
     id: Mapped[intpk]
     username: Mapped[str]
 
+    resumes: Mapped[list["Resumes"]] = relationship()
+
 
 class Workload(Enum):
     parttime = "parttime"
@@ -50,6 +53,8 @@ class Resumes(Base):
     worker_id: Mapped[int] = mapped_column(ForeignKey("workers.id", ondelete="CASCADE"))
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
+
+    worker: Mapped["Workers"] = relationship()
 
 
 metadata_obj = MetaData()
