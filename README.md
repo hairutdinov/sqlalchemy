@@ -870,6 +870,6 @@ class Resumes(Base):
 	)
 ```
 
-### limit the joinedloaded results
+### Ограничение подгружаемых связей
 
 [Ссылка на stackoverflow](https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results)
