@@ -625,6 +625,9 @@ print(inspector.get_columns('workers'))
 Данные подгружаются только тогда, когда нужны. Заранее связанные данные Join'ом не загружаются.
 Поэтому тут присутствует проблема N+1 - есть один запрос, и потом N запросов (где N - кол-во работников) когда для каждого работника забираем его резюме.
 
+⚠️**Важно**
+Ленивая загрузка НЕ работает в асинхронном варианте
+
 ```python
 class Workers(Base):
 	...
@@ -666,3 +669,40 @@ def select_workers_joined_relationship():
 #### Select in load
 
 Подходит для one-to-many или many-to-many
+
+```python
+def select_workers_selectin_relationship():
+	with session_factory() as session:
+		query = select(Workers).options(selectinload(Workers.resumes))
+		res = session.execute(query)
+		result = res.unique().scalars().all()
+		print(result[0].resumes)
+```
+
+#### __repr__ метод в базовом классе Base для ORM моделей
+
+```python
+class Base(DeclarativeBase):
+	"""Включить в __repr__ метод вывод <кол-во> первых колонок"""
+	include_repr_columns_num = 3
+	"""Включить в __repr__ метод вывод перечисленных колонок, помимо :include_repr_columns_num"""
+	include_repr_columns = ()
+
+	def __repr__(self):
+		columns = []
+
+		for idx, column in enumerate(self.__table__.columns.keys()):
+			if (
+				idx < self.include_repr_columns_num
+				or column in self.include_repr_columns
+			):
+				columns.append(column)
+
+		cols = [f"{c}={getattr(self, c)}" for c in columns]
+		cols_str = ",".join(cols)
+		return f'<{self.__class__.__name__} {cols_str}>'
+
+class Resumes(Base):
+	...
+	include_repr_columns = ("workload", )
+```

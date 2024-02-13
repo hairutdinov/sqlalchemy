@@ -56,6 +56,8 @@ class Resumes(Base):
 
     worker: Mapped["Workers"] = relationship()
 
+    include_repr_columns = ("workload",)
+
 
 metadata_obj = MetaData()
 
