@@ -290,7 +290,9 @@ def update_worker(worker_id: int = 1, username: str = "Emanuel"):
 		conn.commit()
 ```
 
-⚠️**Важно** Всегда использовать bindparams для предотвращения sql-инъекций
+⚠️**Важно**
+
+Всегда использовать bindparams для предотвращения sql-инъекций
 
 #### С помощью Query Builder / строителя запросов
 
@@ -648,6 +650,7 @@ class Resumes(Base):
 Выполнятся N+1 запросов, потому что для каждого работника выполнится еще по одному запросу для получения резюме
 
 ⚠️**Важно**
+
 Ленивая загрузка НЕ работает в асинхронном варианте
 
 ```python
@@ -821,6 +824,8 @@ def select_workers_contains_eager():
 		res = session.execute(query)
 		result = res.unique().scalars().all()
 ```
+
+
 
 #### Лимитированная выборка связанных данных
 
