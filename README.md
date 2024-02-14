@@ -70,6 +70,7 @@
       * [Лимитированная выборка связанных данных](#лимитированная-выборка-связанных-данных)
       * [Index и CheckConstraint](#index-и-checkconstraint)
       * [Ограничение подгружаемых связей](#ограничение-подгружаемых-связей)
+      * [Many-to-many](#many-to-many)
 
 # SqlAlchemy
 
@@ -946,3 +947,37 @@ class Resumes(Base):
 ### Ограничение подгружаемых связей
 
 [Ссылка на stackoverflow](https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results)
+
+
+### Many-to-many
+
+```python
+class Resumes(Base):
+	...
+	vacancies_replied: Mapped[list["Vacancies"]] = relationship(
+		back_populates="resumes_replied",
+		secondary="vacancies_replies",
+	)
+
+
+class Vacancies(Base):
+	...
+	resumes_replied: Mapped[list["Resumes"]] = relationship(
+		back_populates="vacancies_replied",
+		secondary="vacancies_replies",
+	)
+
+
+class VacanciesReplies(Base):
+	__tablename__ = "vacancies_replies"
+
+	resume_id: Mapped[int] = mapped_column(
+		ForeignKey("resumes.id", ondelete="CASCADE"),
+		primary_key=True,
+	)
+	vacancy_id: Mapped[int] = mapped_column(
+		ForeignKey("vacancies.id", ondelete="CASCADE"),
+		primary_key=True,
+	)
+	cover_letter: Mapped[Optional[str]]
+```

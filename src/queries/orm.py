@@ -2,6 +2,7 @@ from database import Base
 from database import engine
 from database import session_factory
 from models import Resumes
+from models import Vacancies
 from models import Workers
 from models import Workload
 from sqlalchemy import and_
@@ -13,6 +14,9 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import contains_eager
+
+from schemas import WorkersDTO
+from schemas import WorkersRelDTO
 
 
 class Core:
@@ -36,9 +40,11 @@ class Core:
     @staticmethod
     def select_workers():
         with session_factory() as session:
-            query = select(Workers)
+            query = select(Workers).limit(2)
             result = session.execute(query)
-            print(result.scalars().all())
+            result_orm = result.scalars().all()
+            result_dto = [WorkersDTO.model_validate(row, from_attributes=True) for row in result_orm]
+            print(result_dto)
 
     @staticmethod
     def update_worker(worker_id: int = 1, username: str = "emanuel"):
@@ -221,7 +227,8 @@ class Core:
             query = select(Workers).options(selectinload(Workers.resumes))
             res = session.execute(query)
             result = res.unique().scalars().all()
-            print(result[0].resumes)
+            result_dto = [WorkersRelDTO.model_validate(row, from_attributes=True) for row in result]
+            print(result_dto)
 
     @staticmethod
     def select_workers_with_condition_relationship():
@@ -273,3 +280,26 @@ class Core:
             print(len(result))
             print(dir(result[0].resumes))
             # print(result[0].resumes)
+
+    @staticmethod
+    def add_vacancies_and_replies():
+        with session_factory() as session:
+            new_vacancy = Vacancies(title="Python разработчик", compensation=100000)
+            resume_1 = session.get(Resumes, 1)
+            resume_2 = session.get(Resumes, 2)
+            resume_1.vacancies_replied.append(new_vacancy)
+            resume_2.vacancies_replied.append(new_vacancy)
+            session.commit()
+
+    @staticmethod
+    def select_resumes_with_all_relationships():
+        with session_factory() as session:
+            query = (
+                select(Resumes)
+                .options(joinedload(Resumes.worker))
+                .options(selectinload(Resumes.vacancies_replied).load_only(Vacancies.title))
+            )
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result)
+

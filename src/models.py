@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Annotated
+from typing import Optional
 
 from database import Base
 from database import str_256
@@ -72,7 +73,39 @@ class Resumes(Base):
         back_populates="resumes"
     )
 
+    vacancies_replied: Mapped[list["Vacancies"]] = relationship(
+        back_populates="resumes_replied",
+        secondary="vacancies_replies",
+    )
+
     include_repr_columns = ("workload",)
+
+
+class Vacancies(Base):
+    __tablename__ = "vacancies"
+
+    id: Mapped[intpk]
+    title: Mapped[str_256]
+    compensation: Mapped[Optional[int]]
+
+    resumes_replied: Mapped[list["Resumes"]] = relationship(
+        back_populates="vacancies_replied",
+        secondary="vacancies_replies",
+    )
+
+
+class VacanciesReplies(Base):
+    __tablename__ = "vacancies_replies"
+
+    resume_id: Mapped[int] = mapped_column(
+        ForeignKey("resumes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    vacancy_id: Mapped[int] = mapped_column(
+        ForeignKey("vacancies.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    cover_letter: Mapped[Optional[str]]
 
 
 metadata_obj = MetaData()
